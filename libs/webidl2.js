@@ -1,5 +1,5 @@
-(function() {
-  var tokenise = function(str) {
+(function () {
+  var tokenise = function (str) {
     var tokens = [],
       re = {
         "float": /^-?(([0-9]+\.[0-9]*|[0-9]*\.[0-9]+)([Ee][-+]?[0-9]+)?|[0-9]+[Ee][-+]?[0-9]+)/,
@@ -14,7 +14,7 @@
       var matched = false;
       for (var i = 0, n = types.length; i < n; i++) {
         var type = types[i];
-        str = str.replace(re[type], function(tok) {
+        str = str.replace(re[type], function (tok) {
           tokens.push({ type: type, value: tok });
           matched = true;
           return "";
@@ -34,12 +34,12 @@
     this.tokens = tokens;
   };
 
-  WebIDLParseError.prototype.toString = function() {
+  WebIDLParseError.prototype.toString = function () {
     return this.message + ", line " + this.line + " (tokens: '" + this.input + "')\n" +
       JSON.stringify(this.tokens, null, 4);
   };
 
-  var parse = function(tokens, opt) {
+  var parse = function (tokens, opt) {
     var line = 1;
     tokens = tokens.slice();
 
@@ -49,7 +49,7 @@
       STR = "string",
       OTHER = "other";
 
-    var error = function(str) {
+    var error = function (str) {
       var tok = "";
       var numTokens = 0;
       var maxTokens = 5;
@@ -62,7 +62,7 @@
 
     var last_token = null;
 
-    var consume = function(type, value) {
+    var consume = function (type, value) {
       if (!tokens.length || tokens[0].type !== type) return;
       if (typeof value === "undefined" || tokens[0].value === value) {
         last_token = tokens.shift();
@@ -71,17 +71,19 @@
       }
     };
 
-    var ws = function() {
+    var ws = function () {
       if (!tokens.length) return;
       if (tokens[0].type === "whitespace") {
         var t = tokens.shift();
-        t.value.replace(/\n/g, function(m) { line++;
-          return m; });
+        t.value.replace(/\n/g, function (m) {
+          line++;
+          return m;
+        });
         return t;
       }
     };
 
-    var all_ws = function(store, pea) { // pea == post extended attribute, tpea = same for types
+    var all_ws = function (store, pea) { // pea == post extended attribute, tpea = same for types
       var t = { type: "whitespace", value: "" };
       while (true) {
         var w = ws();
@@ -102,7 +104,7 @@
             var matched = false;
             for (var i = 0, n = wsTypes.length; i < n; i++) {
               var type = wsTypes[i];
-              w = w.replace(re[type], function(tok, m1) {
+              w = w.replace(re[type], function (tok, m1) {
                 store.push({ type: type + (pea ? ("-" + pea) : ""), value: m1 });
                 matched = true;
                 return "";
@@ -117,7 +119,7 @@
       }
     };
 
-    var integer_type = function() {
+    var integer_type = function () {
       var ret = "";
       all_ws();
       if (consume(ID, "unsigned")) ret = "unsigned ";
@@ -132,7 +134,7 @@
       if (ret) error("Failed to parse integer type");
     };
 
-    var float_type = function() {
+    var float_type = function () {
       var ret = "";
       all_ws();
       if (consume(ID, "unrestricted")) ret = "unrestricted ";
@@ -142,7 +144,7 @@
       if (ret) error("Failed to parse float type");
     };
 
-    var primitive_type = function() {
+    var primitive_type = function () {
       var num_type = integer_type() || float_type();
       if (num_type) return num_type;
       all_ws();
@@ -151,7 +153,7 @@
       if (consume(ID, "octet")) return "octet";
     };
 
-    var const_value = function() {
+    var const_value = function () {
       if (consume(ID, "true")) return { type: "boolean", value: true };
       if (consume(ID, "false")) return { type: "boolean", value: false };
       if (consume(ID, "null")) return { type: "null" };
@@ -166,7 +168,7 @@
       }
     };
 
-    var type_suffix = function(obj) {
+    var type_suffix = function (obj) {
       while (true) {
         all_ws();
         if (consume(OTHER, "?")) {
@@ -187,7 +189,7 @@
       }
     };
 
-    var single_type = function() {
+    var single_type = function () {
       var prim = primitive_type(),
         ret = { sequence: false, generic: null, nullable: false, array: false, union: false },
         name, value;
@@ -234,7 +236,7 @@
       return ret;
     };
 
-    var union_type = function() {
+    var union_type = function () {
       all_ws();
       if (!consume(OTHER, "(")) return;
       var ret = { sequence: false, generic: null, nullable: false, array: false, union: true, idlType: [] };
@@ -251,18 +253,18 @@
       return ret;
     };
 
-    var type = function() {
+    var type = function () {
       return single_type() || union_type();
     };
 
-    var type_with_extended_attributes = function() {
+    var type_with_extended_attributes = function () {
       var extAttrs = extended_attrs();
       var ret = single_type() || union_type();
       if (extAttrs.length && ret) ret.extAttrs = extAttrs;
       return ret;
     };
 
-    var argument = function(store) {
+    var argument = function (store) {
       var ret = { optional: false, variadic: false };
       ret.extAttrs = extended_attrs(store);
       all_ws(store, "pea");
@@ -308,7 +310,7 @@
       return ret;
     };
 
-    var argument_list = function(store) {
+    var argument_list = function (store) {
       var ret = [],
         arg = argument(store ? ret : null);
       if (!arg) return;
@@ -321,7 +323,7 @@
       }
     };
 
-    var simple_extended_attr = function(store) {
+    var simple_extended_attr = function (store) {
       all_ws();
       var name = consume(ID);
       if (!name) return;
@@ -377,7 +379,7 @@
 
     // Note: we parse something simpler than the official syntax. It's all that ever
     // seems to be used
-    var extended_attrs = function(store) {
+    var extended_attrs = function (store) {
       var eas = [];
       all_ws(store);
       if (!consume(OTHER, "[")) return eas;
@@ -394,7 +396,7 @@
       return eas;
     };
 
-    var default_ = function() {
+    var default_ = function () {
       all_ws();
       if (consume(OTHER, "=")) {
         all_ws();
@@ -412,7 +414,7 @@
       }
     };
 
-    var const_ = function(store) {
+    var const_ = function (store) {
       all_ws(store, "pea");
       if (!consume(ID, "const")) return;
       var ret = { type: "const", nullable: false };
@@ -441,7 +443,7 @@
       return ret;
     };
 
-    var inheritance = function() {
+    var inheritance = function () {
       all_ws();
       if (consume(OTHER, ":")) {
         all_ws();
@@ -450,7 +452,7 @@
       }
     };
 
-    var operation_rest = function(ret, store) {
+    var operation_rest = function (ret, store) {
       all_ws();
       if (!ret) ret = {};
       var name = consume(ID);
@@ -465,7 +467,7 @@
       return ret;
     };
 
-    var callback = function(store) {
+    var callback = function (store) {
       all_ws(store, "pea");
       var ret;
       if (!consume(ID, "callback")) return;
@@ -493,7 +495,7 @@
       return ret;
     };
 
-    var attribute = function(store) {
+    var attribute = function (store) {
       all_ws(store, "pea");
       var grabbed = [],
         ret = {
@@ -532,7 +534,7 @@
       return rest;
     };
 
-    var attribute_rest = function(ret) {
+    var attribute_rest = function (ret) {
       if (!consume(ID, "attribute")) {
         return;
       }
@@ -548,7 +550,7 @@
       return ret;
     };
 
-    var return_type = function() {
+    var return_type = function () {
       var typ = type();
       if (!typ) {
         if (consume(ID, "void")) {
@@ -558,7 +560,7 @@
       return typ;
     };
 
-    var operation = function(store) {
+    var operation = function (store) {
       all_ws(store, "pea");
       var ret = {
         type: "operation",
@@ -592,7 +594,7 @@
         return ret;
       } else if (consume(ID, "stringifier")) {
         ret.stringifier = true; -
-        all_ws();
+          all_ws();
         if (consume(OTHER, ";")) return ret;
         ret.idlType = return_type();
         operation_rest(ret, store);
@@ -619,7 +621,7 @@
       }
     };
 
-    var identifiers = function(arr) {
+    var identifiers = function (arr) {
       while (true) {
         all_ws();
         if (consume(OTHER, ",")) {
@@ -630,7 +632,7 @@
       }
     };
 
-    var serialiser = function(store) {
+    var serialiser = function (store) {
       all_ws(store, "pea");
       if (!consume(ID, "serializer")) return;
       var ret = { type: "serializer" };
@@ -685,7 +687,7 @@
       return ret;
     };
 
-    var iterable_type = function() {
+    var iterable_type = function () {
       if (consume(ID, "iterable")) return "iterable";
       else if (consume(ID, "legacyiterable")) return "legacyiterable";
       else if (consume(ID, "maplike")) return "maplike";
@@ -693,13 +695,13 @@
       else return;
     };
 
-    var readonly_iterable_type = function() {
+    var readonly_iterable_type = function () {
       if (consume(ID, "maplike")) return "maplike";
       else if (consume(ID, "setlike")) return "setlike";
       else return;
     };
 
-    var iterable = function(store) {
+    var iterable = function (store) {
       all_ws(store, "pea");
       var grabbed = [],
         ret = { type: null, idlType: null, readonly: false };
@@ -747,7 +749,7 @@
       return ret;
     };
 
-    var interface_ = function(isPartial, store) {
+    var interface_ = function (isPartial, store) {
       all_ws(isPartial ? null : store, "pea");
       if (!consume(ID, "interface")) return;
       all_ws();
@@ -788,7 +790,7 @@
       }
     };
 
-    var namespace = function(isPartial, store) {
+    var namespace = function (isPartial, store) {
       all_ws(isPartial ? null : store, "pea");
       if (!consume(ID, "namespace")) return;
       all_ws();
@@ -819,8 +821,8 @@
       }
     }
 
-    var noninherited_attribute = function(store) {
-      var w = all_ws(store, "pea"), 
+    var noninherited_attribute = function (store) {
+      var w = all_ws(store, "pea"),
         grabbed = [],
         ret = {
           type: "attribute",
@@ -842,8 +844,8 @@
       }
       return rest;
     }
-    
-    var nonspecial_operation = function(store) {
+
+    var nonspecial_operation = function (store) {
       all_ws(store, "pea");
       var ret = {
         type: "operation",
@@ -859,7 +861,7 @@
       return operation_rest(ret, store);
     }
 
-    var partial = function(store) {
+    var partial = function (store) {
       all_ws(store, "pea");
       if (!consume(ID, "partial")) return;
       var thing = dictionary(true, store) ||
@@ -870,7 +872,7 @@
       return thing;
     };
 
-    var dictionary = function(isPartial, store) {
+    var dictionary = function (isPartial, store) {
       all_ws(isPartial ? null : store, "pea");
       if (!consume(ID, "dictionary")) return;
       all_ws();
@@ -916,7 +918,7 @@
       }
     };
 
-    var exception = function(store) {
+    var exception = function (store) {
       all_ws(store, "pea");
       if (!consume(ID, "exception")) return;
       all_ws();
@@ -959,7 +961,7 @@
       }
     };
 
-    var enum_ = function(store) {
+    var enum_ = function (store) {
       all_ws(store, "pea");
       if (!consume(ID, "enum")) return;
       all_ws();
@@ -993,7 +995,7 @@
       }
     };
 
-    var typedef = function(store) {
+    var typedef = function (store) {
       all_ws(store, "pea");
       if (!consume(ID, "typedef")) return;
       var ret = {
@@ -1009,7 +1011,7 @@
       return ret;
     };
 
-    var implements_ = function(store) {
+    var implements_ = function (store) {
       all_ws(store, "pea");
       var target = consume(ID);
       if (!target) return;
@@ -1032,7 +1034,7 @@
       }
     };
 
-    var definition = function(store) {
+    var definition = function (store) {
       return callback(store) ||
         interface_(false, store) ||
         partial(store) ||
@@ -1044,7 +1046,7 @@
         namespace(false, store);
     };
 
-    var definitions = function(store) {
+    var definitions = function (store) {
       if (!tokens.length) return [];
       var defs = [];
       while (true) {
@@ -1065,7 +1067,7 @@
   };
 
   var obj = {
-    parse: function(str, opt) {
+    parse: function (str, opt) {
       if (!opt) opt = {};
       var tokens = tokenise(str);
       return parse(tokens, opt);
@@ -1075,7 +1077,7 @@
   if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
     module.exports = obj;
   } else if (typeof define === 'function' && define.amd) {
-    define([], function() {
+    define([], function () {
       return obj;
     });
   } else {
